@@ -2,6 +2,8 @@ using System.Diagnostics;
 
 using Microsoft.AspNetCore.Mvc;
 
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
@@ -19,10 +21,21 @@ builder.Services.AddOpenTelemetry()
       { "environment", builder.Environment.EnvironmentName },
     });
   })
-  .WithTracing(tpb =>
+  .WithTracing(tracing =>
   {
-    tpb.AddAspNetCoreInstrumentation();
-    tpb.AddConsoleExporter();
+    tracing.AddAspNetCoreInstrumentation();
+    tracing.AddConsoleExporter();
+    tracing.AddOtlpExporter();
+    tracing.AddOtlpExporter(opt =>
+    {
+      opt.Endpoint = new Uri("http://localhost:5341/ingest/otlp/v1/traces");
+      opt.Protocol = OtlpExportProtocol.HttpProtobuf;
+    });
+  })
+  .WithMetrics(metrics =>
+  {
+    metrics.AddAspNetCoreInstrumentation();
+    metrics.AddOtlpExporter();
   });
 
 var app = builder.Build();
