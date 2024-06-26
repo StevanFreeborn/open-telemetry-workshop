@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 using Microsoft.AspNetCore.Mvc;
 
 using OpenTelemetry.Resources;
@@ -9,7 +11,14 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddOpenTelemetry()
-  .ConfigureResource(resource => resource.AddService("dotnet-frontend"))
+  .ConfigureResource(resource =>
+  {
+    resource.AddService("dotnet-backend");
+    resource.AddAttributes(new Dictionary<string, object>()
+    {
+      { "environment", builder.Environment.EnvironmentName },
+    });
+  })
   .WithTracing(tpb =>
   {
     tpb.AddAspNetCoreInstrumentation();
@@ -32,6 +41,8 @@ app.UseHttpsRedirection();
 
 app.MapGet("/greeting", ([FromQuery] string firstName, [FromQuery] string surname, [FromServices] ILogger<Program> logger) =>
 {
+  Activity.Current?.SetTag("firstName", firstName);
+  Activity.Current?.SetTag("surname", surname);
   logger.LogInformation("Greeting endpoint called: {firstName} {surname}", firstName, surname);
   return $"Hello {firstName} {surname}";
 })
