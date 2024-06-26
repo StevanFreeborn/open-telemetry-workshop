@@ -6,9 +6,7 @@ using OpenTelemetry.Trace;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(o =>
-{
-});
+builder.Services.AddSwaggerGen();
 
 builder.Services.AddOpenTelemetry()
   .ConfigureResource(resource => resource.AddService("dotnet-frontend"))
