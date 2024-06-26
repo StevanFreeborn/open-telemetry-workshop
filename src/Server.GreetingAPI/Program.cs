@@ -86,17 +86,11 @@ app
 
     var client = clientFactory.CreateClient(AgeApiKey);
 
-    using var activity = instrumentation.Source.StartActivity("GenerateRandomAge");
     var response = await client.GetFromJsonAsync<AgeResponse>("/generate-age");
 
-    if (response is null)
-    {
-      return Results.Problem("Failed to get age from Age API", statusCode: StatusCodes.Status500InternalServerError);
-    }
-
-    activity?.SetTag("age", response.Age);
-
-    return Results.Ok($"Hello my name is {req.FirstName} {req.Surname} and I am {response.Age} years old.");
+    return response is null
+      ? Results.Problem("Failed to get age from Age API", statusCode: StatusCodes.Status500InternalServerError)
+      : Results.Ok($"Hello my name is {req.FirstName} {req.Surname} and I am {response.Age} years old.");
   })
   .WithName("Greeting")
   .WithOpenApi();
