@@ -17,9 +17,9 @@ builder.Services.AddSingleton<Instrumentation>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(o => o.DescribeAllParametersInCamelCase());
 
-const string AgeApiKey = "AgeApi";
+const string ageApiKey = "AgeApi";
 
-builder.Services.AddHttpClient(AgeApiKey, client => client.BaseAddress = new Uri("https://localhost:7099"));
+builder.Services.AddHttpClient(ageApiKey, client => client.BaseAddress = new Uri("https://localhost:7099"));
 
 builder.Logging.AddOpenTelemetry(o => o.AddOtlpExporter());
 
@@ -86,7 +86,7 @@ app
     Instrumentation.GreetingCounter.Add(1);
 
 
-    var client = clientFactory.CreateClient(AgeApiKey);
+    var client = clientFactory.CreateClient(ageApiKey);
 
     var response = await client.GetFromJsonAsync<AgeResponse>("/generate-age");
 
