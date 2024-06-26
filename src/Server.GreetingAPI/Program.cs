@@ -54,6 +54,8 @@ builder.Services.AddOpenTelemetry()
     metrics.AddMeter(Instrumentation.Meter.Name);
   });
 
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -94,6 +96,8 @@ app
   })
   .WithName("Greeting")
   .WithOpenApi();
+
+app.MapHealthChecks("/health");
 
 app.Run();
 

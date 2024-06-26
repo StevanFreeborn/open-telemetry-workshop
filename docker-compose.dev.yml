@@ -3,7 +3,7 @@ services:
     image: mcr.microsoft.com/dotnet/aspire-dashboard:8.0.0
     ports:
       - 18888:18888
-      - 4317:18889
+      # - 4317:18889 Removed so we can use collector
   seq-node01:
     image: datalust/seq:latest
     container_name: seq-node01
@@ -15,5 +15,12 @@ services:
       - ACCEPT_EULA=Y
     volumes:
       - seq-data01:/data
+  collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    volumes:
+      - ./config-aspire.yaml:/etc/otelcol-contrib/config.yaml
+    ports:
+      - 4317:4317
+      - 4318:4318
 volumes:
   seq-data01:
