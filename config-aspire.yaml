@@ -6,11 +6,20 @@ receivers:
 
 processors:
   batch:
-  filter/health:
-    error_mode: ignore
-    traces:
-      span:
-        - 'name == "GET /health"'
+  # filter/health:
+  #   error_mode: ignore
+  #   traces:
+  #     span:
+  #       - 'name == "GET /health"'
+  # attributes/add-environment:
+  #   actions:
+  #     - key: environment
+  #       value: development
+  #       action: upsert
+  # attributes/remove-route:
+  #   actions:
+  #     - key: http.route
+  #       action: delete
 
 exporters:
   otlp:
@@ -26,7 +35,12 @@ service:
       exporters: [otlp]
     traces:
       receivers: [otlp]
-      processors: [batch, filter/health]
+      processors: [
+          batch,
+          # filter/health,
+          # attributes/add-environment,
+          # attributes/remove-route,
+        ]
       exporters: [otlp]
     metrics:
       receivers: [otlp]
