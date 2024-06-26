@@ -52,14 +52,15 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapGet("/greeting", ([FromQuery] string firstName, [FromQuery] string surname, [FromServices] ILogger<Program> logger) =>
-{
-  Activity.Current?.SetTag("firstName", firstName);
-  Activity.Current?.SetTag("surname", surname);
-  logger.LogInformation("Greeting endpoint called: {firstName} {surname}", firstName, surname);
-  return $"Hello {firstName} {surname}";
-})
-.WithName("Greeting")
-.WithOpenApi();
+app
+  .MapGet("/greeting", ([FromQuery] string firstName, [FromQuery] string surname, [FromServices] ILogger<Program> logger) =>
+  {
+    Activity.Current?.SetTag("firstName", firstName);
+    Activity.Current?.SetTag("surname", surname);
+    logger.LogInformation("Greeting endpoint called: {firstName} {surname}", firstName, surname);
+    return $"Hello {firstName} {surname}";
+  })
+  .WithName("Greeting")
+  .WithOpenApi();
 
 app.Run();
