@@ -1,7 +1,5 @@
 using System.Diagnostics;
 
-using Microsoft.AspNetCore.Mvc;
-
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
@@ -10,6 +8,8 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSingleton<Instrumentation>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -35,6 +35,7 @@ builder.Services.AddOpenTelemetry()
       opt.Endpoint = new Uri("http://localhost:5341/ingest/otlp/v1/traces");
       opt.Protocol = OtlpExportProtocol.HttpProtobuf;
     });
+    tracing.AddSource(Instrumentation.SourceName);
   })
   .WithMetrics(metrics =>
   {
@@ -58,15 +59,24 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app
-  .MapGet("/generate-age", (HttpContext context) =>
+  .MapGet("/generate-age", (HttpContext context, Instrumentation instrumentation) =>
   {
     var originalUserAgent = Baggage.GetBaggage("original_user_agent");
     Activity.Current?.AddTag("original_user_agent", originalUserAgent);
 
+    using var activity = instrumentation.Source.StartActivity("GenerateRandomAge");
     var age = Random.Shared.Next(1, 100);
+    activity?.SetTag("age", age);
+
     return Results.Ok(new { Age = age });
   })
   .WithName("GetAge")
   .WithOpenApi();
 
 app.Run();
+
+class Instrumentation
+{
+  public const string SourceName = "AgeAPI";
+  public readonly ActivitySource Source = new(SourceName);
+}

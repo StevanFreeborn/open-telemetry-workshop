@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using System.Text.Json;
+using System.Diagnostics.Metrics;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,6 +11,8 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSingleton<Instrumentation>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(o => o.DescribeAllParametersInCamelCase());
@@ -41,11 +43,14 @@ builder.Services.AddOpenTelemetry()
       opt.Protocol = OtlpExportProtocol.HttpProtobuf;
     });
     tracing.AddHttpClientInstrumentation();
+    tracing.AddSource(Instrumentation.SourceName);
   })
   .WithMetrics(metrics =>
   {
     metrics.AddAspNetCoreInstrumentation();
+    metrics.AddHttpClientInstrumentation();
     metrics.AddOtlpExporter();
+    metrics.AddMeter(Instrumentation.Meter.Name);
   });
 
 var app = builder.Build();
@@ -67,18 +72,30 @@ app
     [AsParameters] GreetingRequest req,
     [FromServices] ILogger<Program> logger,
     [FromServices] IHttpClientFactory clientFactory,
-    HttpContext context
+    HttpContext context,
+    Instrumentation instrumentation
   ) =>
   {
     Activity.Current?.SetTag("firstName", req.FirstName);
     Activity.Current?.SetTag("surname", req.Surname);
     logger.LogInformation("Greeting endpoint called: {firstName} {surname}", req.FirstName, req.Surname);
     Baggage.SetBaggage("original_user_agent", context.Request.Headers.UserAgent.ToString());
+    Instrumentation.GreetingCounter.Add(1);
+
 
     var client = clientFactory.CreateClient(AgeApiKey);
+
+    using var activity = instrumentation.Source.StartActivity("GenerateRandomAge");
     var response = await client.GetFromJsonAsync<AgeResponse>("/generate-age");
 
-    return Results.Ok($"Hello my name is {req.FirstName} {req.Surname} and I am {response!.Age} years old.");
+    if (response is null)
+    {
+      return Results.Problem("Failed to get age from Age API", statusCode: StatusCodes.Status500InternalServerError);
+    }
+
+    activity?.SetTag("age", response.Age);
+
+    return Results.Ok($"Hello my name is {req.FirstName} {req.Surname} and I am {response.Age} years old.");
   })
   .WithName("Greeting")
   .WithOpenApi();
@@ -91,3 +108,12 @@ record GreetingRequest(
 );
 
 record AgeResponse(int Age);
+
+class Instrumentation
+{
+  public const string SourceName = "GreetingAPI";
+  public const string MeterName = "GreetingAPI";
+  public readonly ActivitySource Source = new(SourceName);
+  public static Meter Meter = new(MeterName);
+  public static Counter<int> GreetingCounter = Meter.CreateCounter<int>("greeting_counter");
+}
