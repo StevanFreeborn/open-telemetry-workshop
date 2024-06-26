@@ -1,4 +1,5 @@
 {
   "dotnet.defaultSolution": "src/OpenTelemetryWorkshop.sln",
-  "editor.formatOnSave": true
+  "editor.formatOnSave": true,
+  "cSpell.words": ["Otlp"]
 }
