@@ -1,0 +1,4 @@
+{
+  "dotnet.defaultSolution": "src/OpenTelemetryWorkshop.sln",
+  "editor.formatOnSave": true
+}
